@@ -2,10 +2,17 @@ import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth0 } from '@auth0/auth0-react';
+import axios from 'axios';
 
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
   const [note, setNote] = useState('');
+
+  function generateNoteId() {
+  const now = new Date();
+  // Zettelkasten-style ID.
+  return now.toISOString().replace(/[-:T]/g, '').slice(0, 12);
+}
 
   if (isLoading) return <p>Loading...</p>;
 
@@ -33,6 +40,27 @@ function App() {
         rows={10}
         style={{ width: '100%', fontSize: '1rem', marginTop: '1rem' }}
       />
+      <button
+  onClick={() => {
+    const noteId = generateNoteId();
+    const payload = {
+      id: noteId,
+      userId: user.sub,
+      title: "",
+      content: note,
+      createdAt: new Date().toISOString()
+    };
+
+    console.log('Saving note:', payload);
+
+    axios.post('http://localhost:5000/notes', payload)
+      .then(() => alert('Note saved!'))
+      .catch(err => console.error('Save failed:', err));
+  }}
+  style={{ marginTop: '1rem' }}
+>
+  Save Note
+</button>
       <h2>Preview</h2>
       <div style={{ border: '1px solid #ccc', padding: '1rem' }}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{note}</ReactMarkdown>

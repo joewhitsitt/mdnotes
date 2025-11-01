@@ -13,3 +13,16 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
+
+let notes = [];
+
+app.post('/notes', (req, res) => {
+  const note = req.body;
+  if (!note || !note.id || !note.userId || !note.content) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  notes.push(note);
+  console.log(`Saved note for ${note.userId}: ${note.id}`);
+  res.status(201).json({ message: 'Note saved' });
+});
