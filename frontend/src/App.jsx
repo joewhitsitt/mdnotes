@@ -6,12 +6,26 @@ import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import NoteGrid from './NoteGrid.jsx';
 
+
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
   const [note, setNote] = useState('');
   const [notes, setNotes] = useState([]);
   const [editingNote, setEditingNote] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const { getAccessTokenSilently } = useAuth0();
+
+  async function authRequest(method, url, data = null) {
+  const token = await getAccessTokenSilently();
+  return axios({
+    method,
+    url,
+    data,
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
 
   const filteredNotes = notes.filter((n) =>
     n.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -19,8 +33,7 @@ function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      axios
-        .get(`http://localhost:5000/notes?userId=${user.sub}`)
+      authRequest('get', `${import.meta.env.VITE_API_BASE}/notes`)
         .then((res) => setNotes(res.data))
         .catch((err) => console.error('Failed to fetch notes:', err));
     }
@@ -37,9 +50,8 @@ function App() {
   };
 
   const handleDelete = (id) => {
-    axios
-      .delete(`http://localhost:5000/notes/${id}`)
-      .then(() => axios.get(`http://localhost:5000/notes?userId=${user.sub}`))
+    authRequest('delete', `${import.meta.env.VITE_API_BASE}/notes/${id}`)
+      .then(() => authRequest('get', `${import.meta.env.VITE_API_BASE}/notes`))
       .then((res) => setNotes(res.data))
       .catch((err) => console.error('Delete failed:', err));
   };
@@ -78,19 +90,17 @@ function App() {
 
           const payload = {
             id: isUpdating ? editingNote.id : generateNoteId(),
-            userId: user.sub,
             content: note,
             createdAt: isUpdating ? editingNote.createdAt : now,
             updatedAt: now,
           };
 
-          axios
-            .post('http://localhost:5000/notes', payload)
+          authRequest('post', `${import.meta.env.VITE_API_BASE}/notes`, payload)
             .then(() => {
               alert(isUpdating ? 'Note updated!' : 'Note saved!');
               setNote('');
               setEditingNote(null);
-              return axios.get(`http://localhost:5000/notes?userId=${user.sub}`);
+              return authRequest('get', `${import.meta.env.VITE_API_BASE}/notes`);
             })
             .then((res) => setNotes(res.data))
             .catch((err) => console.error('Save failed:', err));
