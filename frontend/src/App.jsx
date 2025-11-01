@@ -1,19 +1,24 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 function App() {
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    axios.get('http://localhost:5000/')
-      .then(res => setMessage(res.data))
-      .catch(err => console.error(err));
-  }, []);
+  const [note, setNote] = useState('');
 
   return (
-    <div>
-      <h1>Markdown Notes App</h1>
-      <p>Backend says: {message}</p>
+    <div style={{ padding: '2rem' }}>
+      <h1>mdnotes</h1>
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Write your markdown here..."
+        rows={10}
+        style={{ width: '100%', fontSize: '1rem' }}
+      />
+      <h2>Preview</h2>
+      <div style={{ border: '1px solid #ccc', padding: '1rem' }}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{note}</ReactMarkdown>
+      </div>
     </div>
   );
 }
