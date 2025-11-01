@@ -1,20 +1,50 @@
-import { useState } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
+import NoteGrid from './NoteGrid.jsx';
 
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, isLoading } = useAuth0();
   const [note, setNote] = useState('');
+  const [notes, setNotes] = useState([]);
+  const [editingNote, setEditingNote] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredNotes = notes.filter((n) =>
+    n.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      axios
+        .get(`http://localhost:5000/notes?userId=${user.sub}`)
+        .then((res) => setNotes(res.data))
+        .catch((err) => console.error('Failed to fetch notes:', err));
+    }
+  }, [isAuthenticated, user]);
 
   function generateNoteId() {
-  const now = new Date();
-  // Zettelkasten-style ID.
-  return now.toISOString().replace(/[-:T]/g, '').slice(0, 12);
-}
+    const now = new Date();
+    return now.toISOString().replace(/[-:T]/g, '').slice(0, 12);
+  }
 
-  if (isLoading) return <p>Loading...</p>;
+  const handleEdit = (note) => {
+    setNote(note.content);
+    setEditingNote(note);
+  };
+
+  const handleDelete = (id) => {
+    axios
+      .delete(`http://localhost:5000/notes/${id}`)
+      .then(() => axios.get(`http://localhost:5000/notes?userId=${user.sub}`))
+      .then((res) => setNotes(res.data))
+      .catch((err) => console.error('Delete failed:', err));
+  };
+
+  if (isLoading && import.meta.env.MODE !== 'development') return <p>Loading...</p>;
 
   if (!isAuthenticated) {
     return (
@@ -41,30 +71,49 @@ function App() {
         style={{ width: '100%', fontSize: '1rem', marginTop: '1rem' }}
       />
       <button
-  onClick={() => {
-    const noteId = generateNoteId();
-    const payload = {
-      id: noteId,
-      userId: user.sub,
-      title: "",
-      content: note,
-      createdAt: new Date().toISOString()
-    };
+        onClick={() => {
+          const now = new Date().toISOString();
 
-    console.log('Saving note:', payload);
+          const isUpdating = editingNote !== null;
 
-    axios.post('http://localhost:5000/notes', payload)
-      .then(() => alert('Note saved!'))
-      .catch(err => console.error('Save failed:', err));
-  }}
-  style={{ marginTop: '1rem' }}
->
-  Save Note
-</button>
+          const payload = {
+            id: isUpdating ? editingNote.id : generateNoteId(),
+            userId: user.sub,
+            content: note,
+            createdAt: isUpdating ? editingNote.createdAt : now,
+            updatedAt: now,
+          };
+
+          axios
+            .post('http://localhost:5000/notes', payload)
+            .then(() => {
+              alert(isUpdating ? 'Note updated!' : 'Note saved!');
+              setNote('');
+              setEditingNote(null);
+              return axios.get(`http://localhost:5000/notes?userId=${user.sub}`);
+            })
+            .then((res) => setNotes(res.data))
+            .catch((err) => console.error('Save failed:', err));
+        }}
+        style={{ marginTop: '1rem' }}
+      >
+        Save Note
+      </button>
+
       <h2>Preview</h2>
       <div style={{ border: '1px solid #ccc', padding: '1rem' }}>
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{note}</ReactMarkdown>
       </div>
+
+      <input
+        type="text"
+        placeholder="Search notes..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{ marginTop: '1rem', width: '100%', fontSize: '1rem' }}
+      />
+
+      <NoteGrid notes={filteredNotes} onEdit={handleEdit} onDelete={handleDelete} />
     </div>
   );
 }

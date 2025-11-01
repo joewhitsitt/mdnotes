@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: rgb(32, 33, 36);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -65,4 +65,25 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.my-masonry-grid {
+  display: flex;
+  margin-left: -30px;
+  width: auto;
+}
+
+.my-masonry-grid_column {
+  padding-left: 30px;
+  background-clip: padding-box;
+}
+.note-card {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  border: 1px solid;
+  border-color: rgb(95, 99, 104);
 }
