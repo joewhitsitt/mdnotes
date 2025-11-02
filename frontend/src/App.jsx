@@ -32,12 +32,12 @@ function App() {
   );
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isLoading && isAuthenticated) {
       authRequest('get', `${import.meta.env.VITE_API_BASE}/notes`)
         .then((res) => setNotes(res.data))
         .catch((err) => console.error('Failed to fetch notes:', err));
     }
-  }, [isAuthenticated, user]);
+  }, [isLoading, isAuthenticated, user]);
 
   function generateNoteId() {
     const now = new Date();
