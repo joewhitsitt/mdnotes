@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useAuth0 } from '@auth0/auth0-react';
@@ -15,17 +14,20 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const { getAccessTokenSilently } = useAuth0();
 
-  async function authRequest(method, url, data = null) {
-  const token = await getAccessTokenSilently();
-  return axios({
-    method,
-    url,
-    data,
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-}
+  const authRequest = useCallback(
+    async (method, url, data = null) => {
+      const token = await getAccessTokenSilently();
+      return axios({
+        method,
+        url,
+        data,
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    },
+    [getAccessTokenSilently]
+  );
 
   const filteredNotes = notes.filter((n) =>
     n.content.toLowerCase().includes(searchTerm.toLowerCase())
@@ -37,7 +39,7 @@ function App() {
         .then((res) => setNotes(res.data))
         .catch((err) => console.error('Failed to fetch notes:', err));
     }
-  }, [isLoading, isAuthenticated, user]);
+  }, [isLoading, isAuthenticated, user, authRequest]);
 
   function generateNoteId() {
     const now = new Date();
